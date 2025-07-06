@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Organization Tree</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="header">
+    <h2>Upload Excel to View BEL Organization Hierarchy</h2>
+    <label class="theme-switch" title="Toggle Day/Night Mode">
+      <input type="checkbox" id="toggleTheme" />
+      <span class="slider"></span> 🌙
+    </label>
+  </div>
+
+  <input type="file" id="upload" accept=".xlsx" title="Upload Excel File" />
+  <input type="text" id="searchBox" placeholder="Search employee..." title="Type employee name or ID" />
+  <button onclick="searchNode()">Search</button>
+  <button onclick="resetView()">Reset View</button>
+  <button onclick="zoomIn()">Zoom In</button>
+  <button onclick="zoomOut()">Zoom Out</button>
+  <button onclick="toggleFullScreen()">Full Screen</button>
+  <!-- <button onclick="exportAsImage()">Export Image</button> -->
+  <button onclick="downloadExcel()">Download Excel</button>
+  <button onclick="clearLocalData()">Clear Storage</button>
+
+  <div id="network"></div>
+
+  <div id="popup" class="modal">
+    <div class="modal-content">
+      <span id="close">×</span>
+      <div id="popupLogo"></div>
+      <div id="popupDetails"></div>
+    </div>
+  </div>
+
+  <!-- Required Scripts -->
+  <script src="xlsx.full.min.js"></script>
+  <script src="vis-network.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
