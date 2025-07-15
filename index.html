@@ -15,7 +15,7 @@
   </div>
 
   <input type="file" id="upload" accept=".xlsx" title="Upload Excel File" />
-  <input type="text" id="searchBox" placeholder="Search employee..." title="Type employee name or ID" />
+  <input type="text" id="searchBox" placeholder="Enter employee name or Staff no" title="Type employee name or ID" />
   <button onclick="searchNode()">Search</button>
   <button onclick="resetView()">Reset View</button>
   <button onclick="zoomIn()">Zoom In</button>
@@ -23,7 +23,10 @@
   <button onclick="toggleFullScreen()">Full Screen</button>
   <!-- <button onclick="exportAsImage()">Export Image</button> -->
   <button onclick="downloadExcel()">Download Excel</button>
-  <button onclick="clearLocalData()">Clear Storage</button>
+  <!-- <button onclick="clearLocalData()">Clear Storage</button> -->
+   <input type="text" id="designationFilter" placeholder="Enter Designation to filter" />
+  <button onclick="downloadFilteredByDesignation()">Download Filtered Excel</button>
+
 
   <div id="network"></div>
 

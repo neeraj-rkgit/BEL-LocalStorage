@@ -97,7 +97,7 @@ input:checked + .slider:before {
 }
 
 .modal-content {
-  background: linear-gradient(to bottom right, #e9ddeb, #ffffff);
+  background: linear-gradient(to bottom right, #b3afb3, #ffffff);
   margin: auto;
   padding: 20px;
   border-radius: 10px;
@@ -110,7 +110,7 @@ input:checked + .slider:before {
 
 #popupLogo {
   background-image: url('BEL.png');
-  background-size: 60px;
+  background-size: 180px;
   background-repeat: no-repeat;
   background-position: center;
   height: 60px;
@@ -140,17 +140,17 @@ input:checked + .slider:before {
 
 /* Dark Mode */
 body.dark-mode {
-  background: #121212;
+  background: #d8d1d1;
   color: #eeeeee;
 }
 
 body.dark-mode h2 {
-  color: #6308f5;
+  color: #000000;
 }
 
 body.dark-mode #network {
   border-color: #666;
-  background-color: #d7e77c;
+  background-color: #d6d6d2;
 }
 
 body.dark-mode .modal-content {

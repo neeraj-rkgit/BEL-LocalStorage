@@ -16,11 +16,18 @@ document.getElementById('toggleTheme').addEventListener('change', () => {
   document.body.classList.toggle('dark-mode');
 });
 
+document.getElementById('searchBox').addEventListener('keydown', function (e) {
+  if (e.key === 'Enter') {
+    searchNode();
+  }
+});
+
 window.onload = function () {
   const storedData = localStorage.getItem("orgData");
   if (storedData) {
-    const parsedData = JSON.parse(storedData);
-    drawTree(parsedData);
+    drawTree(JSON.parse(storedData));
+  } else {
+    fetchDefaultExcel();
   }
 
   const fileData = localStorage.getItem("orgFile");
@@ -36,6 +43,29 @@ window.onload = function () {
     uploadedFile = new File([ab], fileName, { type: mimeString });
   }
 };
+
+function fetchDefaultExcel() {
+  fetch('Employee_details.xlsx')
+    .then(response => response.arrayBuffer())
+    .then(buffer => {
+      const data = new Uint8Array(buffer);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const raw = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+
+      const cleaned = raw.map(row => {
+        const norm = {};
+        Object.keys(row).forEach(k => {
+          const cleanKey = k.replace(/\u00A0/g, ' ').trim();
+          norm[cleanKey] = typeof row[k] === "string" ? row[k].trim() : row[k];
+        });
+        return norm;
+      });
+
+      localStorage.setItem("orgData", JSON.stringify(cleaned));
+      drawTree(cleaned);
+    });
+}
 
 function handleFile(e) {
   const file = e.target.files[0];
@@ -55,8 +85,7 @@ function handleFile(e) {
       return norm;
     });
 
-    localStorage.setItem("orgData", JSON.stringify(cleaned));  
-    // Store the file data in localStorage 
+    localStorage.setItem("orgData", JSON.stringify(cleaned));
 
     const readerForFile = new FileReader();
     readerForFile.onload = function () {
@@ -76,22 +105,43 @@ function drawTree(data) {
   nodes = [];
   employeeMap = {};
 
-  data.forEach((emp) => {
-    const id = emp["Staff No"];
-    staffNoMap[id] = true;
-    employeeMap[id] = emp;
+const colorMap = {};
+const colorPalette = [
+  "#f28b82", "#fbbc04", "#fff475", "#ccff90", "#a7ffeb",
+  "#cbf0f8", "#aecbfa", "#d7aefb", "#fdcfe8", "#e6c9a8", "#e8eaed"
+];
+let colorIndex = 0;
 
-    nodes.push({
-      id: id,
-      label: `${emp["Employee Name"]}\n(${emp["Designation"]})`,
-      shape: "box",
-      font: { size: 18 },
-      margin: 12,
-      widthConstraint: { minimum: 180 },
-      heightConstraint: { minimum: 70 },
-      //title: `<strong>${emp["Employee Name"]}</strong><br>Designation: ${emp["Designation"]}<br>Staff No: ${id}`
-    });
+data.forEach((emp) => {
+  const id = emp["Staff No"];
+  const designation = emp["Designation"] || "Unknown";
+  staffNoMap[id] = true;
+  employeeMap[id] = emp;
+
+  if (!colorMap[designation]) {
+    colorMap[designation] = colorPalette[colorIndex % colorPalette.length];
+    colorIndex++;
+  }
+
+  nodes.push({
+    id: id,
+    label: `${emp["Employee Name"]}\n(${designation})`,
+    shape: "box",
+    font: { size: 18 },
+    margin: 12,
+    widthConstraint: { minimum: 180 },
+    heightConstraint: { minimum: 70 },
+    color: {
+      background: colorMap[designation],
+      border: "#333",
+      highlight: {
+        background: "#cde4ff",
+        border: "#2b7ce9"
+      }
+    }
   });
+});
+
 
   data.forEach((emp) => {
     const from = emp["Parent"];
@@ -118,8 +168,8 @@ function drawTree(data) {
     },
     autoResize: false,
     interaction: {
-      dragNodes: true,
-      dragView: false,
+      dragNodes: false,
+      dragView: true,
       zoomView: false,
       selectable: true,
       hover: true
@@ -162,7 +212,7 @@ function drawTree(data) {
         }
         return "—";
       };
-         // Phone ,Email, Location, Department, Joining Date
+
       document.getElementById("popupDetails").innerHTML = `
         <hr>
         <h3>${emp["Employee Name"]}</h3>
@@ -175,29 +225,38 @@ function drawTree(data) {
         <p><strong>Project-2:</strong> ${getProjectRole("Project-2", "Role-2")}</p>
         <p><strong>Project-3:</strong> ${getProjectRole("Project-3", "Role-3")}</p>
         <hr>
+        <p><strong>Department:</strong> ${emp["Department"] || "None"}</p>
+        <p><strong>Phone No:</strong> ${emp["Phone"] || "—"}</p>
       `;
       document.getElementById("popup").style.display = "block";
     }
   });
 }
 
+// ✅ Enhanced search: by Employee Name or Staff No
 function searchNode() {
-  const searchText = document.getElementById("searchBox").value.toLowerCase();
-  const found = nodes.find(n => n.label.toLowerCase().includes(searchText));
+  const input = document.getElementById("searchBox").value.trim().toLowerCase();
+  if (!input) return;
+
+  const found = nodes.find(n => {
+    const emp = employeeMap[n.id];
+    const nameMatch = emp["Employee Name"]?.toLowerCase().includes(input);
+    const staffNoMatch = String(emp["Staff No"]).toLowerCase().includes(input);
+    return nameMatch || staffNoMatch;
+  });
+
   if (found) {
     network.selectNodes([found.id]);
-    network.focus(found.id, { scale: 1.5, animation: true });
+    network.focus(found.id, {
+      scale: 1.5,
+      animation: {
+        duration: 800,
+        easingFunction: "easeInOutQuad"
+      }
+    });
   } else {
-    alert("No match found.");
+    alert("No match found for employee name or staff number.");
   }
-}
-
-function exportAsImage() {
-  const canvas = document.querySelector("canvas");
-  const link = document.createElement("a");
-  link.download = "hierarchy.png";
-  link.href = canvas.toDataURL();
-  link.click();
 }
 
 function resetView() {
@@ -216,22 +275,20 @@ function zoomOut() {
 }
 
 function toggleFullScreen() {
-  const elem = document.getElementById("network");
+  const elem = document.documentElement;
   if (!document.fullscreenElement) {
-    elem.requestFullscreen();
+    elem.requestFullscreen().catch(err => {
+      alert(`Error trying to enable full-screen: ${err.message}`);
+    });
   } else {
     document.exitFullscreen();
   }
 }
 
 function downloadExcel() {
-  const fileData = localStorage.getItem("orgFile");
-  const fileName = localStorage.getItem("orgFileName") || "organization.xlsx";
-  if (!fileData) return alert("No file uploaded.");
-
   const link = document.createElement("a");
-  link.href = fileData;
-  link.download = fileName;
+  link.href = "Employee_details.xlsx";
+  link.download = "Employee_details.xlsx";
   link.click();
 }
 
@@ -239,5 +296,32 @@ function clearLocalData() {
   localStorage.removeItem("orgData");
   localStorage.removeItem("orgFile");
   localStorage.removeItem("orgFileName");
-  alert("Local data cleared. Please refresh.");
+  alert("Local data cleared. Refreshing...");
+  location.reload();
 }
+
+// filter employees by designation and download as Excel
+function downloadFilteredByDesignation() {
+  const input = document.getElementById("designationFilter").value.trim().toLowerCase();
+  if (!input) {
+    alert("Please enter a designation.");
+    return;
+  }
+
+  const allData = Object.values(employeeMap);
+  const filtered = allData.filter(emp =>
+    (emp["Designation"] || "").toLowerCase().includes(input)
+  );
+
+  if (filtered.length === 0) {
+    alert("No employee found with that designation.");
+    return;
+  }
+
+  const sheet = XLSX.utils.json_to_sheet(filtered);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, sheet, "Filtered_Employees");
+
+  XLSX.writeFile(workbook, `Employees_${input}.xlsx`);
+}
+
